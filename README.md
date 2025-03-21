@@ -1,5 +1,6 @@
 # align_corners-in-pytorch
 在torch.nn.functional中，interpolate和grid_sample函数中都有align_corners参数，此处以grid_sample函数来介绍该参数的具体含义。
+
 可参见该函数官方文档 https://pytorch.org/docs/stable/generated/torch.nn.functional.grid_sample.html#torch.nn.functional.grid_sample
 
 # 参考图
@@ -7,15 +8,13 @@
 
 # 示例代码
 在align_corners的情况下，如下代码可以取到a的四个顶点：
+```
     a = torch.arange(12, dtype=torch.float).reshape(3,4).unsqueeze(0).unsqueeze(0)  # (1, 1, 3, 4)
-    
     grid = torch.tensor([[[-0.75, -2/3], [0.75, -2/3]], 
-    
                          [[-0.75, 2/3], [0.75, 2/3]]]).unsqueeze(0)                 # (1, 2, 2, 2)
-                         
     out = F.grid_sample(a, grid=grid, align_corners=False, padding_mode='zeros')    # (1, 1, 2, 2)
-    
     print(out)
+```
     
 如果不在方格的中心处位置，则需要应用插值方法，pytorch中的默认插值方法为bilinear方法，即根据点位置与周围的四个点的距离来进行插值，
 可以参见链接 https://blog.csdn.net/suiyuemeng/article/details/103293671 中具体插值计算方法。
@@ -23,12 +22,11 @@
 grid_sample的padding_mode默认是'zeros'，即边缘处补0，同时还有'border', 'reflection'取值。
 
 可通过如下代码测试:
-    grid = torch.tensor([[[-1., -1.], [1., -1.]], 
-    
-                         [[-1., 1,], [1., 1.]]]).unsqueeze(0)                 # (1, 2, 2, 2)
-                         
+```
+    grid = torch.tensor([[[-1., -1.], [1., -1.]],
+                         [[-1., 1,], [1., 1.]]]).unsqueeze(0)                       # (1, 2, 2, 2)                   
     out = F.grid_sample(a, grid=grid, align_corners=False, padding_mode='zeros')    # (1, 1, 2, 2)
-    
     print(out)
+```
 
 grid_sample=True则类似，除了坐标系的原点不同，其他操作相同。
