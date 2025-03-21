@@ -9,11 +9,11 @@
 # 示例代码
 在align_corners的情况下，如下代码可以取到a的四个顶点：
 ```
-    a = torch.arange(12, dtype=torch.float).reshape(3,4).unsqueeze(0).unsqueeze(0)  # (1, 1, 3, 4)
-    grid = torch.tensor([[[-0.75, -2/3], [0.75, -2/3]], 
-                         [[-0.75, 2/3], [0.75, 2/3]]]).unsqueeze(0)                 # (1, 2, 2, 2)
-    out = F.grid_sample(a, grid=grid, align_corners=False, padding_mode='zeros')    # (1, 1, 2, 2)
-    print(out)
+a = torch.arange(12, dtype=torch.float).reshape(3,4).unsqueeze(0).unsqueeze(0)  # (1, 1, 3, 4)
+grid = torch.tensor([[[-0.75, -2/3], [0.75, -2/3]], 
+                     [[-0.75, 2/3], [0.75, 2/3]]]).unsqueeze(0)                 # (1, 2, 2, 2)
+out = F.grid_sample(a, grid=grid, align_corners=False, padding_mode='zeros')    # (1, 1, 2, 2)
+print(out)
 ```
     
 如果不在方格的中心处位置，则需要应用插值方法，pytorch中的默认插值方法为bilinear方法，即根据点位置与周围的四个点的距离来进行插值，
@@ -23,10 +23,10 @@ grid_sample的padding_mode默认是'zeros'，即边缘处补0，同时还有'bor
 
 可通过如下代码测试:
 ```
-    grid = torch.tensor([[[-1., -1.], [1., -1.]],
-                         [[-1., 1,], [1., 1.]]]).unsqueeze(0)                       # (1, 2, 2, 2)                   
-    out = F.grid_sample(a, grid=grid, align_corners=False, padding_mode='zeros')    # (1, 1, 2, 2)
-    print(out)
+grid = torch.tensor([[[-1., -1.], [1., -1.]],
+                     [[-1., 1,], [1., 1.]]]).unsqueeze(0)                       # (1, 2, 2, 2)                   
+out = F.grid_sample(a, grid=grid, align_corners=False, padding_mode='zeros')    # (1, 1, 2, 2)
+print(out)
 ```
 
 grid_sample=True则类似，除了坐标系的原点不同，其他操作相同。
