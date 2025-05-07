@@ -6,6 +6,8 @@
 # 参考图
 ![image](https://github.com/user-attachments/assets/47d103e3-fb4c-4149-a22b-a64ac471128e)
 
+所以在align_corners=False时，grid在进行归一化时应除以H和W，而在align_corners=True时，grid在进行归一化时应除以H-1和W-1.
+
 # 示例代码
 在align_corners的情况下，如下代码可以取到a的四个顶点：
 ```
