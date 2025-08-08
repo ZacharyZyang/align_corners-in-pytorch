@@ -29,10 +29,17 @@ print(out)
 ```
 
 # align_corners不同取值时的行为
+
+
 1. align_corners=True时，归一化坐标空间[-1, 1]对应的是像素中心点，此时(-1, -1)代表图像像素坐标(0, 0)，(1, 1)代表图像像素坐标(W-1, H-1)；
+
 2. align_corners=False时，归一化坐标空间[-1, 1]对应的是像素的边界框。此时归一化坐标(-1, -1)代表图像像素(0, 0)的左上角顶点，坐标是(-0.5, -0.5)；归一化坐标(1, 1)代表的是图像像素 (W-1, H-1) 的右下角顶点，坐标是 (W-0.5, H-0.5)；
+
 所以align_corners=True时，将像素视为点，上/下采样时，是将四个角点的位置保持对齐；而align_corners=False时，将像素视为小方块，整个图像则是一个框，上/下采样时，是将这个图像框的边界对齐，此时角点是方格的中心点，不一定对齐；
 
+<img width="1019" height="738" alt="image" src="https://github.com/user-attachments/assets/3a39c004-89de-44d8-9434-82b6fff943a8" />
+
+如图所示，align_corners=True时，四个角点是对齐的，否则是边界框对齐。
 
 # 归一化坐标与图像像素坐标的映射： 
 1. align_corners=False, unnormalize coord from [-1, 1] to [0, size - 1]
