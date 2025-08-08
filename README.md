@@ -129,7 +129,24 @@ for norm_x, norm_y in test_points:
     print(f"差异: {abs(manual_result - pytorch_result.item())}")
 ```
 
-如果不在方格的中心处位置，则需要应用插值方法，pytorch中的默认插值方法为bilinear方法，即根据点位置与周围的四个点的距离来进行插值，
+pytorch中的默认插值方法为bilinear方法，即根据点位置与周围的四个点的距离来进行插值，
 可以参见链接 https://blog.csdn.net/suiyuemeng/article/details/103293671 中具体双线性插值的计算方法。
 同时如果在边缘处，则需要根据padding_mode来得到边缘处的pad值，然后再进行插值计算。
 grid_sample的padding_mode默认是'zeros'，即边缘处补0，同时还有'border', 'reflection'取值。
+
+但是我们用F.interpolate插值时会发现align_corners=False时的四个角点的值也和原始图像的四个顶点相同，这是由于clamp截断机制。
+如下代码验证：
+```
+    # 边界clamp测试
+    inp = torch.arange(12).view(1, 1, 3, 4).float()   # 1×1×3×4
+    print("input:\n", inp[0, 0])
+
+    # 1. align_corners=True
+    out1 = F.interpolate(inp, size=(6, 8), mode='bilinear', align_corners=True)
+    print("\nalign_corners=True, mapping:\n", out1[0, 0])
+
+    # 2. align_corners=False
+    # 会发现此时的四个角点的值也和原始图像的四个顶点相同，因为F.interpolate时使用了clamp，当计算出的采样点超出输入图像边界时，会被截断为边界值；
+    out2 = F.interpolate(inp, size=(6, 8), mode='bilinear', align_corners=False)
+    print("\nalign_corners=False, mapping:\n", out2[0, 0])
+```
