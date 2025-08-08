@@ -58,6 +58,77 @@ print(out)
 所以此时 [0, 0] 与 [0, 0] 对齐，[W_out-1, H_out-1] 与 [W_in-1, H_in-1] 对齐，即角点是对齐的；
 
 # 插值以及验证-0.5的偏移
+通过手工重写双线性插值，来验证-0.5的偏移，见如下示例代码：
+```
+def manual_bilinear_interpolation(input_tensor, norm_x, norm_y, align_corners=False):
+    """手动实现双线性插值来验证 PyTorch 的行为"""
+    _, _, H, W = input_tensor.shape
+    
+    # 坐标转换
+    if align_corners:
+        # align_corners=True: [-1,1] -> [0, H-1] or [0, W-1]
+        x_pixel = (norm_x + 1) * (W - 1) / 2
+        y_pixel = (norm_y + 1) * (H - 1) / 2
+    else:
+        # align_corners=False: [-1,1] -> [-0.5, W-0.5] or [-0.5, H-0.5]
+        x_pixel = (norm_x + 1) * W / 2 - 0.5
+        y_pixel = (norm_y + 1) * H / 2 - 0.5
+    
+    print(f"归一化坐标 ({norm_x}, {norm_y}) 映射到像素坐标 ({x_pixel}, {y_pixel})")
+    
+    # 获取四个邻近点
+    x0 = int(np.floor(x_pixel))
+    y0 = int(np.floor(y_pixel))
+    x1 = x0 + 1
+    y1 = y0 + 1
+    
+    # 计算权重
+    alpha = x_pixel - x0
+    beta = y_pixel - y0
+    
+    print(f"四个邻近点: ({x0},{y0}), ({x1},{y0}), ({x0},{y1}), ({x1},{y1})")
+    print(f"权重: alpha={alpha}, beta={beta}")
+    
+    # 边界检查和插值计算
+    def get_pixel_value(x, y):
+        if 0 <= x < W and 0 <= y < H:
+            return input_tensor[0, 0, y, x].item()
+        else:
+            return 0.0  # padding with zeros
+    
+    # 双线性插值公式
+    val_00 = get_pixel_value(x0, y0)
+    val_10 = get_pixel_value(x1, y0)
+    val_01 = get_pixel_value(x0, y1)
+    val_11 = get_pixel_value(x1, y1)
+    
+    result = (1-alpha)*(1-beta)*val_00 + alpha*(1-beta)*val_10 + (1-alpha)*beta*val_01 + alpha*beta*val_11
+    return result
+
+# 测试 align_corners=False 时，是否存在 -0.5 的偏移
+H, W = 3, 3
+input_tensor = torch.arange(9, dtype=torch.float32).reshape(1, 1, H, W)
+print("输入图像:")
+print(input_tensor.squeeze())
+
+# 测试不同坐标点
+test_points = [(-1, -1), (0, 0), (1, 1)]
+
+for norm_x, norm_y in test_points:
+    print(f"\n--- 测试点 ({norm_x}, {norm_y}) ---")
+    
+    # 手动计算
+    manual_result = manual_bilinear_interpolation(input_tensor, norm_x, norm_y, align_corners=False)
+    print(f"手动计算结果: {manual_result}")
+    
+    # PyTorch 计算
+    grid = torch.tensor([[[norm_x, norm_y]]], dtype=torch.float32).unsqueeze(0)
+    pytorch_result = F.grid_sample(input_tensor, grid, mode='bilinear', align_corners=False)
+    print(f"PyTorch 结果: {pytorch_result.item()}")
+    
+    print(f"差异: {abs(manual_result - pytorch_result.item())}")
+```
+
 如果不在方格的中心处位置，则需要应用插值方法，pytorch中的默认插值方法为bilinear方法，即根据点位置与周围的四个点的距离来进行插值，
 可以参见链接 https://blog.csdn.net/suiyuemeng/article/details/103293671 中具体双线性插值的计算方法。
 同时如果在边缘处，则需要根据padding_mode来得到边缘处的pad值，然后再进行插值计算。
