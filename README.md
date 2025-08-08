@@ -36,18 +36,26 @@ print(out)
 
 # 归一化坐标与图像像素坐标的映射： 
 1. align_corners=False, unnormalize coord from [-1, 1] to [0, size - 1]
+
 映射公式：x_pixel = (x_norm + 1) / 2 * W - 0.5; y_pixel = (y_norm + 1) / 2 * H - 0.5
+
 2. align_corners=True, unnormalize coord from [-1, 1] to [-0.5, size - 0.5]
+
 映射公式：x_pixel = (x_norm + 1) / 2 * (W - 1); y_pixel = (y_norm + 1) / 2 * (H - 1)
 
 # 输入输出尺寸的坐标映射：
 1. align_corners=False:
-  映射公式：x_in = (x_out + 0.5) * (W_in / W_out) - 0.5; y_in = (y_out + 0.5) * (H_in / H_out) - 0.5
-  所以此时 [-0.5, -0.5] 与 [-0.5, -0.5] 对齐，[W_out-0.5, H_out-0.5] 与 [W_in-0.5, H_in-0.5] 对齐，即输入输出边界框是对齐的； 但此时采样会超出原始图像的范围（比如-0.5也为预测值，但不为原像素值）；
-  当此时x_out=0 或 y_out=0 时，可得到 x_in != 0 或 y_in != 0， 所以角点并未对齐；
+
+映射公式：x_in = (x_out + 0.5) * (W_in / W_out) - 0.5; y_in = (y_out + 0.5) * (H_in / H_out) - 0.5
+
+所以此时 [-0.5, -0.5] 与 [-0.5, -0.5] 对齐，[W_out-0.5, H_out-0.5] 与 [W_in-0.5, H_in-0.5] 对齐，即输入输出边界框是对齐的； 但此时采样会超出原始图像的范围（比如-0.5也为预测值，但不为原像素值）；
+当此时x_out=0 或 y_out=0 时，可得到 x_in != 0 或 y_in != 0， 所以角点并未对齐；
+
 2. align_corners=True:
-  映射公式：x_in = x_out * (W_in - 1) / (W_out - 1); y_in = y_out * (H_in - 1) / (H_out - 1)
-  所以此时 [0, 0] 与 [0, 0] 对齐，[W_out-1, H_out-1] 与 [W_in-1, H_in-1] 对齐，即角点是对齐的；
+
+映射公式：x_in = x_out * (W_in - 1) / (W_out - 1); y_in = y_out * (H_in - 1) / (H_out - 1)
+
+所以此时 [0, 0] 与 [0, 0] 对齐，[W_out-1, H_out-1] 与 [W_in-1, H_in-1] 对齐，即角点是对齐的；
 
 # 插值以及验证-0.5的偏移
 如果不在方格的中心处位置，则需要应用插值方法，pytorch中的默认插值方法为bilinear方法，即根据点位置与周围的四个点的距离来进行插值，
