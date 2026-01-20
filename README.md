@@ -13,7 +13,7 @@ def create_grid(height, width, align_corners=False):
         x = torch.linspace(0, width-1, width)
         y = torch.linspace(0, height-1, height)
     else:
-        x = torch.linspace(0, width-1, width) + 0.5 # 中心对齐
+        x = torch.linspace(0, width-1, width) + 0.5    # 中心对齐
         y = torch.linspace(0, height-1, height) + 0.5
     
     return torch.meshgrid(x, y, indexing='xy')
@@ -52,49 +52,59 @@ print(out)
 如图所示，align_corners=True时，四个角点是对齐的，否则是边界框对齐。
 
 # 归一化坐标与图像像素坐标的映射： 
-1. align_corners=False, unnormalize coord from [-1, 1] to [0, size - 1]
-
-x_norm and y_norm in range(-1, 1), x_pixel and y_pixel in range(0, size - 1)
+1. align_corners=False, normalize coord from [0, size - 1] to [-1, 1] and unnormalize inversely
 
 映射公式：
 
+```
+# x_pixel and y_pixel in range(0, size - 1), x_norm and y_norm in range(-1, 1)
 x_pixel = torch.linspace(0, W-1, W)
 y_pixel = torch.linspace(0, H-1, H)
-x_norm = (x_pixel + 0.5) / W * 2 - 1; 
-y_norm = (y_pixel + 0.5) / H * 2 - 1;
+x_norm = (x_pixel + 0.5) / W * 2 - 1
+y_norm = (y_pixel + 0.5) / H * 2 - 1
 x_pixel = (x_norm + 1) / 2 * W - 0.5
 y_pixel = (y_norm + 1) / 2 * H - 0.5
+```
 
-2. align_corners=True, unnormalize coord from [-1, 1] to [0, size - 1]
-
-x_norm and y_norm in range(-1, 1), x_pixel and y_pixel in range(0, size - 1)
+2. align_corners=True, normalize coord from [0, size - 1] to [-1, 1] and unnormalize inversely
 
 映射公式：
-
+```
+# x_pixel and y_pixel in range(0, size - 1), x_norm and y_norm in range(-1, 1)
 x_pixel = torch.linspace(0, W-1, W)
 y_pixel = torch.linspace(0, H-1, H)
-x_norm = x_pixel / (W-1) * 2 - 1; 
-y_norm = y_pixel / (H-1) * 2 - 1;
+x_norm = x_pixel / (W-1) * 2 - 1
+y_norm = y_pixel / (H-1) * 2 - 1
 x_pixel = (x_norm + 1) / 2 * (W-1)
 y_pixel = (y_norm + 1) / 2 * (H-1)
+```
 
 # 输入输出尺寸的坐标映射：
 1. align_corners=False:
 
-映射公式：x_in = (x_out + 0.5) * (W_in / W_out) - 0.5; y_in = (y_out + 0.5) * (H_in / H_out) - 0.5
-其中x_out, y_out, x_in, y_in均是像素坐标；
+映射公式：
+```
+# calculate in pixel coords
+x_in = (x_out + 0.5) * (W_in / W_out) - 0.5
+y_in = (y_out + 0.5) * (H_in / H_out) - 0.5
+```
 
-所以此时 [-0.5, -0.5] 与 [-0.5, -0.5] 对齐，[W_out-0.5, H_out-0.5] 与 [W_in-0.5, H_in-0.5] 对齐，即输入输出边界框是对齐的； 但此时采样会超出原始图像的范围（比如-0.5也为预测值，但不为原像素值）；
-当此时x_out=0 或 y_out=0 时，可得到 x_in != 0 或 y_in != 0， 所以角点并未对齐；
+所以此时 [0, 0] 与 [0, 0] 未对齐，[W_out-1, H_out-1] 与 [W_in-1, H_in-1] 未对齐，即角点未对齐，而输入输出边界框是对齐的；
+但pytorch的插值F.interpolate实际计算时，align_corners=False的行为也会将角点对齐，具体原由见最后；
 
 2. align_corners=True:
 
-映射公式：x_in = x_out * (W_in - 1) / (W_out - 1); y_in = y_out * (H_in - 1) / (H_out - 1)
+映射公式：
+```
+# calculate in pixel coords
+x_in = x_out * (W_in - 1) / (W_out - 1)
+y_in = y_out * (H_in - 1) / (H_out - 1)
+```
 
 所以此时 [0, 0] 与 [0, 0] 对齐，[W_out-1, H_out-1] 与 [W_in-1, H_in-1] 对齐，即角点是对齐的；
 
-# 插值以及验证-0.5的偏移
-通过手工重写双线性插值，来验证-0.5的偏移，见如下示例代码：
+# 插值以及验证0.5的偏移
+通过手工重写双线性插值，来验证0.5的偏移，见如下示例代码：
 ```
 def manual_bilinear_interpolation(input_tensor, norm_x, norm_y, align_corners=False):
     """手动实现双线性插值来验证 PyTorch 的行为"""
@@ -141,7 +151,7 @@ def manual_bilinear_interpolation(input_tensor, norm_x, norm_y, align_corners=Fa
     result = (1-alpha)*(1-beta)*val_00 + alpha*(1-beta)*val_10 + (1-alpha)*beta*val_01 + alpha*beta*val_11
     return result
 
-# 测试 align_corners=False 时，是否存在 -0.5 的偏移
+# 测试 align_corners=False 时，是否存在 0.5 的偏移
 H, W = 3, 3
 input_tensor = torch.arange(9, dtype=torch.float32).reshape(1, 1, H, W)
 print("输入图像:")
