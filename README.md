@@ -13,8 +13,8 @@ def create_grid(height, width, align_corners=False):
         x = torch.linspace(0, width-1, width)
         y = torch.linspace(0, height-1, height)
     else:
-        x = torch.linspace(0.5, width-0.5, width)  # 中心对齐
-        y = torch.linspace(0.5, height-0.5, height)
+        x = torch.linspace(0, width-1, width) + 0.5 # 中心对齐
+        y = torch.linspace(0, height-1, height) + 0.5
     
     return torch.meshgrid(x, y, indexing='xy')
 ```
@@ -41,10 +41,9 @@ print(out)
 
 # align_corners不同取值时的行为
 
-
 1. align_corners=True时，归一化坐标空间[-1, 1]对应的是像素中心点，此时(-1, -1)代表图像像素坐标(0, 0)，(1, 1)代表图像像素坐标(W-1, H-1)；
 
-2. align_corners=False时，归一化坐标空间[-1, 1]对应的是像素的边界框。此时归一化坐标(-1, -1)代表图像像素(0, 0)的左上角顶点，坐标是(-0.5, -0.5)；归一化坐标(1, 1)代表的是图像像素 (W-1, H-1) 的右下角顶点，坐标是 (W-0.5, H-0.5)；
+2. align_corners=False时，归一化坐标空间[-1, 1]对应的是像素的边界框。此时归一化坐标(-1, -1)代表图像像素(0, 0)的左上角顶点；归一化坐标(1, 1)代表的是图像像素 (W-1, H-1) 的右下角顶点；
 
 所以align_corners=True时，将像素视为点，上/下采样时，是将四个角点的位置保持对齐；而align_corners=False时，将像素视为小方块，整个图像则是一个框，上/下采样时，是将这个图像框的边界对齐，此时角点是方格的中心点，不一定对齐；
 
@@ -55,16 +54,35 @@ print(out)
 # 归一化坐标与图像像素坐标的映射： 
 1. align_corners=False, unnormalize coord from [-1, 1] to [0, size - 1]
 
-映射公式：x_pixel = (x_norm + 1) / 2 * W - 0.5; y_pixel = (y_norm + 1) / 2 * H - 0.5
+x_norm and y_norm in range(-1, 1), x_pixel and y_pixel in range(0, size - 1)
 
-2. align_corners=True, unnormalize coord from [-1, 1] to [-0.5, size - 0.5]
+映射公式：
 
-映射公式：x_pixel = (x_norm + 1) / 2 * (W - 1); y_pixel = (y_norm + 1) / 2 * (H - 1)
+x_pixel = torch.linspace(0, W-1, W)
+y_pixel = torch.linspace(0, H-1, H)
+x_norm = (x_pixel + 0.5) / W * 2 - 1; 
+y_norm = (y_pixel + 0.5) / H * 2 - 1;
+x_pixel = (x_norm + 1) / 2 * W - 0.5
+y_pixel = (y_norm + 1) / 2 * H - 0.5
+
+2. align_corners=True, unnormalize coord from [-1, 1] to [0, size - 1]
+
+x_norm and y_norm in range(-1, 1), x_pixel and y_pixel in range(0, size - 1)
+
+映射公式：
+
+x_pixel = torch.linspace(0, W-1, W)
+y_pixel = torch.linspace(0, H-1, H)
+x_norm = x_pixel / (W-1) * 2 - 1; 
+y_norm = y_pixel / (H-1) * 2 - 1;
+x_pixel = (x_norm + 1) / 2 * (W-1)
+y_pixel = (y_norm + 1) / 2 * (H-1)
 
 # 输入输出尺寸的坐标映射：
 1. align_corners=False:
 
 映射公式：x_in = (x_out + 0.5) * (W_in / W_out) - 0.5; y_in = (y_out + 0.5) * (H_in / H_out) - 0.5
+其中x_out, y_out, x_in, y_in均是像素坐标；
 
 所以此时 [-0.5, -0.5] 与 [-0.5, -0.5] 对齐，[W_out-0.5, H_out-0.5] 与 [W_in-0.5, H_in-0.5] 对齐，即输入输出边界框是对齐的； 但此时采样会超出原始图像的范围（比如-0.5也为预测值，但不为原像素值）；
 当此时x_out=0 或 y_out=0 时，可得到 x_in != 0 或 y_in != 0， 所以角点并未对齐；
@@ -84,11 +102,11 @@ def manual_bilinear_interpolation(input_tensor, norm_x, norm_y, align_corners=Fa
     
     # 坐标转换
     if align_corners:
-        # align_corners=True: [-1,1] -> [0, H-1] or [0, W-1]
+        # align_corners=True: [-1,1] -> [0, W-1] or [0, H-1]
         x_pixel = (norm_x + 1) * (W - 1) / 2
         y_pixel = (norm_y + 1) * (H - 1) / 2
     else:
-        # align_corners=False: [-1,1] -> [-0.5, W-0.5] or [-0.5, H-0.5]
+        # align_corners=False: [-1,1] -> [0, W-1] or [0, H-1]
         x_pixel = (norm_x + 1) * W / 2 - 0.5
         y_pixel = (norm_y + 1) * H / 2 - 0.5
     
