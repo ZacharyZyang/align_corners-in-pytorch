@@ -6,7 +6,18 @@
 # 参考图
 ![image](https://github.com/user-attachments/assets/47d103e3-fb4c-4149-a22b-a64ac471128e)
 
-所以在align_corners=False时，grid在进行归一化时应除以H和W，而在align_corners=True时，grid在进行归一化时应除以H-1和W-1.
+所以在align_corners=False时，生成采样网格应该是从0.5到H(W)-0.5，grid在进行归一化时应除以H和W；而在align_corners=True时，生成采样网格应该是从0到H(W)-1，grid在进行归一化时应除以H-1和W-1.
+```
+def create_grid(height, width, align_corners=False):
+    if align_corners:
+        x = torch.linspace(0, width-1, width)
+        y = torch.linspace(0, height-1, height)
+    else:
+        x = torch.linspace(0.5, width-0.5, width)  # 中心对齐
+        y = torch.linspace(0.5, height-0.5, height)
+    
+    return torch.meshgrid(x, y, indexing='xy')
+```
 
 # 示例代码
 在align_corners=False的情况下，如下代码可以取到a的四个顶点：
