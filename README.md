@@ -41,9 +41,9 @@ print(out)
 
 # align_corners不同取值时的行为
 
-1. align_corners=True时，归一化坐标空间[-1, 1]对应的是像素中心点，此时(-1, -1)代表图像像素坐标(0, 0)，(1, 1)代表图像像素坐标(W-1, H-1)；
+(1) align_corners=True时，归一化坐标空间[-1, 1]对应的是像素中心点，此时(-1, -1)代表图像像素坐标(0, 0)，(1, 1)代表图像像素坐标(W-1, H-1)；
 
-2. align_corners=False时，归一化坐标空间[-1, 1]对应的是像素的边界框。此时归一化坐标(-1, -1)代表图像像素(0, 0)的左上角顶点；归一化坐标(1, 1)代表的是图像像素 (W-1, H-1) 的右下角顶点；
+(2) align_corners=False时，归一化坐标空间[-1, 1]对应的是像素的边界框。此时归一化坐标(-1, -1)代表图像像素(0, 0)的左上角顶点；归一化坐标(1, 1)代表的是图像像素 (W-1, H-1) 的右下角顶点；
 
 所以align_corners=True时，将像素视为点，上/下采样时，是将四个角点的位置保持对齐；而align_corners=False时，将像素视为小方块，整个图像则是一个框，上/下采样时，是将这个图像框的边界对齐，此时角点是方格的中心点，不一定对齐；
 
@@ -52,7 +52,7 @@ print(out)
 如图所示，align_corners=True时，四个角点是对齐的，否则是边界框对齐。
 
 # 归一化坐标与图像像素坐标的映射： 
-1. align_corners=False, normalize coord from [0, size - 1] to [-1, 1] and unnormalize inversely
+(1) align_corners=False, normalize coord from [0, size - 1] to [-1, 1] and unnormalize inversely
 
 映射公式：
 
@@ -66,7 +66,7 @@ x_pixel = (x_norm + 1) / 2 * W - 0.5
 y_pixel = (y_norm + 1) / 2 * H - 0.5
 ```
 
-2. align_corners=True, normalize coord from [0, size - 1] to [-1, 1] and unnormalize inversely
+(2) align_corners=True, normalize coord from [0, size - 1] to [-1, 1] and unnormalize inversely
 
 映射公式：
 ```
@@ -80,7 +80,7 @@ y_pixel = (y_norm + 1) / 2 * (H-1)
 ```
 
 # 输入输出尺寸的坐标映射：
-1. align_corners=False:
+(1) align_corners=False:
 
 映射公式：
 ```
@@ -92,7 +92,7 @@ y_in = (y_out + 0.5) * (H_in / H_out) - 0.5
 所以此时 [0, 0] 与 [0, 0] 未对齐，[W_out-1, H_out-1] 与 [W_in-1, H_in-1] 未对齐，即角点未对齐，而输入输出边界框是对齐的；
 但pytorch的插值F.interpolate实际计算时，align_corners=False的行为也会将角点对齐，具体原由见最后；
 
-2. align_corners=True:
+(2) align_corners=True:
 
 映射公式：
 ```
