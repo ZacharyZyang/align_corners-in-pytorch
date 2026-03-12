@@ -197,7 +197,7 @@ grid_sample的padding_mode默认是'zeros'，即边缘处补0，同时还有'bor
     print("\nalign_corners=False, mapping:\n", out2[0, 0])
 ```
 
-F.interpolate的clamp截断机制可以用F.grid_sample来验证：
+F.interpolate的clamp截断机制可以用F.grid_sample来验证，需要设置F.grid_sample的padding_mode参数为'border'：
 ```
     h_in, w_in = 5, 5
     input_tensor = torch.randn(1, 1, h_in, w_in)
