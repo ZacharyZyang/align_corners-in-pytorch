@@ -196,3 +196,19 @@ grid_sample的padding_mode默认是'zeros'，即边缘处补0，同时还有'bor
     out2 = F.interpolate(inp, size=(6, 8), mode='bilinear', align_corners=False)
     print("\nalign_corners=False, mapping:\n", out2[0, 0])
 ```
+
+F.interpolate的clamp截断机制可以用F.grid_sample来验证：
+```
+    h_in, w_in = 5, 5
+    input_tensor = torch.randn(1, 1, h_in, w_in)
+    h_out, w_out = 10, 10
+    x, y = torch.meshgrid(torch.arange(w_out), torch.arange(h_out), indexing='xy')
+
+    ### ``align_corners=False``
+    grid = torch.stack((x, y), dim=-1).unsqueeze(0)
+    grid = (grid + 0.5) / torch.tensor([w_out, h_out]).float() * 2 - 1  # add 0.5 and divided by (W-1, H-1) 
+    ###  use padding_mode='border' in ``F.grid_sample`` to be consistent with ``F.interpolate``, which will clamp to the image boundary if the calculated grids are out of range
+    input_gs = F.grid_sample(input_tensor, grid, mode='bilinear', align_corners=False, padding_mode='border')
+    input_up = F.interpolate(input_tensor, size=(h_out, w_out), mode='bilinear', align_corners=False)
+    print("align_corners=False: ", (input_gs - input_up).abs().max())
+```
